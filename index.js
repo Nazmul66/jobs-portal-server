@@ -29,18 +29,27 @@ async function run() {
 
     const JobCollection = client.db("Job-portal").collection("create-job-post");
 
+      // components ->  PostJob has been fetch the data
+      app.post("/jobData", async(req, res) =>{
+        const body = req.body;
+        const result = await JobCollection.insertOne(body);
+        res.send(result);
+      })
+
     // components -> JobList_section has been fetch the data
     app.get("/jobData", async(req, res) =>{
         const result = await JobCollection.find().toArray();
         res.send(result);
     })
 
+    // components -> Job_Details has been fetch the data
     app.get('/jobData/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
         const result = await JobCollection.findOne(query);
         res.send(result);
     })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
