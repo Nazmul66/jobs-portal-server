@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 4000;
 
 
 app.use(express.json());
@@ -28,9 +28,10 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const JobCollection = client.db("Job-portal").collection("create-job-post");
+    const JobApplied = client.db("Job-portal").collection("Job-applied");
 
       // components ->  PostJob has been fetch the data
-      app.post("/jobData", async(req, res) =>{
+      app.post("/jobPost", async(req, res) =>{
         const body = req.body;
         const result = await JobCollection.insertOne(body);
         res.send(result);
@@ -49,6 +50,21 @@ async function run() {
         const result = await JobCollection.findOne(query);
         res.send(result);
     })
+
+    // components -> Job_Details has been fetch the data
+    app.post('/jobApply', async(req, res) =>{
+       const body = req.body;
+       const result = await JobApplied.insertOne(body);
+        res.send(result);
+    })
+
+    // components -> JobList has been fetch the data
+    app.get('/JobList', async(req, res) =>{
+       const query = req.query.email;
+       const email = { Email : query}
+       const result = await JobApplied.find(email).toArray();
+       res.send(result);
+   })
 
 
     await client.db("admin").command({ ping: 1 });
