@@ -29,6 +29,7 @@ async function run() {
 
     const JobCollection = client.db("Job-portal").collection("create-job-post");
     const JobApplied = client.db("Job-portal").collection("Job-applied");
+    const userCollection = client.db("Job-portal").collection("user-collection");
 
       // components ->  PostJob has been fetch the data
       app.post("/jobPost", async(req, res) =>{
@@ -53,9 +54,17 @@ async function run() {
 
     // components -> Job_Details has been fetch the data
     app.post('/jobApply', async(req, res) =>{
-       const body = req.body;
-       const result = await JobApplied.insertOne(body);
-        res.send(result);
+       const user = req.body;
+       const id = { jobId : user.jobId }
+      //  console.log(id)
+       const existingUser = await JobApplied.findOne(id);
+       if(existingUser){
+          return res.send({message: "same job can't apply twice"})
+       }
+       else{
+         const result = await JobApplied.insertOne(user);
+         res.send(result);
+       }
     })
 
     // components -> JobList has been fetch the data
@@ -72,6 +81,20 @@ async function run() {
      const query = {_id : new ObjectId(id)} 
      const result = await JobApplied.deleteOne(query);
      res.send(result)
+  })
+
+  // components -> Login page has been fetch the data
+  app.post("/userData", async(req, res) =>{
+     const body = req.body;
+     const email = { email : body.email }
+     const existingEmail = await userCollection.findOne(email);
+     if(existingEmail){
+        return res.send({ message: "already exist" })
+     }
+     else{
+      const result = await userCollection.insertOne(body);
+      res.send(result);
+     }
   })
 
 
