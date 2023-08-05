@@ -135,6 +135,43 @@ async function run() {
      }
   })
 
+  //  components -> EditJobPost page has been fetch the data Get Method
+   app.get("/updateData/:id", async(req, res) =>{
+      const id = req.params.id;
+      const query = { _id : new ObjectId(id) }
+      // console.log( id )
+      const result =  await JobCollection.findOne(query);
+      res.send(result)
+   })
+
+   // components -> EditJobPost page has been fetch the data Get Method
+   app.put("/updatePost/:id", async(req, res) =>{
+    const updateItem = req.body;
+    const id = req.params.id;
+    // console.log(body, id);
+    const filter = { _id: new ObjectId(id) };
+    const options = { upsert: true };
+      const updatePost = {
+        $set: {
+          position             :  updateItem.position,
+          time                 :  updateItem.time,
+          company              :  updateItem.company,
+          image                :  updateItem.image,
+          qualification        :  updateItem.qualification,
+          Experience           :  updateItem.Experience,
+          Location             :  updateItem.Location,
+          Job_Description      :  updateItem.Job_Description,
+          Salary               :  updateItem.Salary,
+          Working              :  updateItem.Working,
+          company_website      :  updateItem.company_website,
+          Experience_level     :  updateItem.Experience_level,
+          post_Date            :  updateItem.post_Date,
+        }
+   };
+   const result = await JobCollection.updateOne(filter, updatePost, options);
+   res.send(result);
+ })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
