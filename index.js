@@ -2,14 +2,32 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const port = process.env.PORT || 4000;
 
 
 app.use(express.json());
 app.use(cors());
 
+
+const verifyJwt = (req, res, next) =>{
+  // console.log("hitting data");
+  // console.log(req.headers.authorization)
+  const authorization = req.headers.authorization;
+  if(!authorization){
+      return res.status(401).send({ error: "true", message: "unauthorized" })
+  }
+  const token = authorization.split(" ")[1]
+  // console.log("get token",token)
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+       if(err){
+          return res.status(403).send({ error: "true", message: "forbidden" })
+       }
+       req.decoded = decoded;
+       next();
+  })
+}
 
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.rnkzyeb.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -22,29 +40,16 @@ const client = new MongoClient(uri, {
   }
 });
 
-const verifyJwt = (req, res, next) =>{
-    // console.log("hitting data");
-    // console.log(req.headers.authorization)
-    const authorization = req.headers.authorization;
-    if(!authorization){
-        return res.status(401).send({ error: "true", message: "unauthorized" })
+  const dbConnect = async () => {
+    try {
+      client.connect();
+      console.log("Database Connected Successfully✅");
+    } catch (error) {
+      console.log(error.name, error.message);
     }
-    const token = authorization.split(" ")[1]
-    // console.log("get token",token)
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
-         if(err){
-            return res.status(403).send({ error: "true", message: "forbidden" })
-         }
-         req.decoded = decoded;
-         next();
-    })
-}
+  };
+  dbConnect();
 
-async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
 
     const JobCollection = client.db("Job-portal").collection("create-job-post");
     const JobApplied = client.db("Job-portal").collection("Job-applied");
@@ -171,16 +176,6 @@ async function run() {
    const result = await JobCollection.updateOne(filter, updatePost, options);
    res.send(result);
  })
-
-
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
-}
-run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
