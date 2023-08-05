@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 4000;
 
 
@@ -21,6 +22,24 @@ const client = new MongoClient(uri, {
   }
 });
 
+const verifyJwt = (req, res, next) =>{
+    // console.log("hitting data");
+    // console.log(req.headers.authorization)
+    const authorization = req.headers.authorization;
+    if(!authorization){
+        return res.status(401).send({ error: "true", message: "unauthorized" })
+    }
+    const token = authorization.split(" ")[1]
+    // console.log("get token",token)
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+         if(err){
+            return res.status(403).send({ error: "true", message: "forbidden" })
+         }
+         req.decoded = decoded;
+         next();
+    })
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -30,6 +49,18 @@ async function run() {
     const JobCollection = client.db("Job-portal").collection("create-job-post");
     const JobApplied = client.db("Job-portal").collection("Job-applied");
     const userCollection = client.db("Job-portal").collection("user-collection");
+
+
+    // create json web token
+    app.post("/jwt", async(req, res) =>{
+        const user = req.body;
+        console.log(user)
+
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+          expiresIn: "1h"
+        })
+        res.send({token});
+    })
 
       // components ->  PostJob has been fetch the data
       app.post("/jobPost", async(req, res) =>{
@@ -68,7 +99,14 @@ async function run() {
     })
 
     // components -> JobList has been fetch the data
-    app.get('/JobList', async(req, res) =>{
+    app.get('/JobList', verifyJwt, async(req, res) =>{
+       const decoded = req.decoded;
+      //  console.log(decoded)
+
+      if(decoded.email !== req.query.email){
+          return res.status(403).send({ error: "true", message: "forbidden" })
+      }
+
        const query = req.query.email;
        const email = { Email : query}
        const result = await JobApplied.find(email).toArray();
